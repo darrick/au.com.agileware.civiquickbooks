@@ -226,12 +226,30 @@ class CRM_Civiquickbooks_Invoice {
     foreach ($payments['values'] as $payment) {
       $txnDate = $payment['trxn_date'];
       $total = sprintf('%.5f', $payment['total_amount']);
+
+      $financialAccount = civicrm_api3('FinancialAccount', 'getsingle', [
+        'return' => ["accounting_code", "account_type_code"],
+        'id' => $payment['to_financial_account_id'],
+      ]);
+
+      $paymentInstrument = civicrm_api3('OptionValue', 'getsingle', [
+        'return' => ["name"],
+        'value' => $payment['payment_instrument_id'],
+        'option_group_id' => "payment_instrument",
+      ]);
+
       $QBOPayment = \QuickBooksOnline\API\Facades\Payment::create(
         [
           'TotalAmt' => $total,
           'CustomerRef' => $account_invoice->CustomerRef,
           'CurrencyRef' => $account_invoice->CurrencyRef,
           'TxnDate' => $txnDate,
+          "DepositToAccountRef" => [
+            "value" => self::getQBOAccount(htmlspecialchars_decode($financialAccount['accounting_code'])),
+          ],
+          "PaymentMethodRef" => [
+            "value" => self::getQBOPaymentMethod(htmlspecialchars_decode($paymentInstrument['name'])),
+          ],
           'Line' => [
             'Amount' => $total,
             'LinkedTxn' => [
@@ -772,6 +790,65 @@ class CRM_Civiquickbooks_Invoice {
         );
       }
     }
+  }
+
+  /**
+   * Get account id from QBO by Name or FullyQualifiedName
+   *
+   * @param $name - Name or FullyQualifiedName of Account.
+   *                Assumes FullyQualifiedName if containing a colon (:)
+   *
+   * @return int|FALSE
+   * @throws \CiviCRM_API3_Exception
+   * @throws \QuickBooksOnline\API\Exception\SdkException
+   */
+  public static function getQBOPaymentMethod($name) {
+    $paymentMethods =& \Civi::$statics[__CLASS__][__FUNCTION__];
+
+    if (!isset($paymentMethods[$name])) {
+      $query = sprintf('SELECT Name,Id From PaymentMethod WHERE Name = \'%1s\'', $name);
+
+      $dataService = CRM_Quickbooks_APIHelper::getAccountingDataServiceObject();
+      $result = $dataService->Query($query, 0, 1);
+
+      if (empty($result)) {
+        throw new Exception("No Account found matching $name");
+      }
+
+      $paymentMethods[$name] = $result[0]->Id;
+    }
+
+    return $paymentMethods[$name];
+  }
+
+  /**
+   * Get account id from QBO by Name or FullyQualifiedName
+   *
+   * @param $name - Name or FullyQualifiedName of Account.
+   *                Assumes FullyQualifiedName if containing a colon (:)
+   *
+   * @return int|FALSE
+   * @throws \CiviCRM_API3_Exception
+   * @throws \QuickBooksOnline\API\Exception\SdkException
+   */
+  public static function getQBOAccount($name) {
+    $accounts =& \Civi::$statics[__CLASS__][__FUNCTION__];
+
+    if (!isset($accounts[$name])) {
+      $field = (strpos($name, ':') === FALSE) ? 'Name' : 'FullyQualifiedName';
+      $query = sprintf('SELECT %1$s,Id From Account WHERE %1$s = \'%2$s\'', $field, $name);
+
+      $dataService = CRM_Quickbooks_APIHelper::getAccountingDataServiceObject();
+      $result = $dataService->Query($query, 0, 1);
+
+      if (empty($result)) {
+        throw new Exception("No Account found matching $name");
+      }
+
+      $accounts[$name] = $result[0]->Id;
+    }
+
+    return $accounts[$name];
   }
 
   /**
