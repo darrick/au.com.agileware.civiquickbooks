@@ -227,40 +227,51 @@ class CRM_Civiquickbooks_Invoice {
       $txnDate = $payment['trxn_date'];
       $total = sprintf('%.5f', $payment['total_amount']);
 
-      $financialAccount = civicrm_api3('FinancialAccount', 'getsingle', [
-        'return' => ["accounting_code", "account_type_code"],
-        'id' => $payment['to_financial_account_id'],
-      ]);
-
-      $paymentInstrument = civicrm_api3('OptionValue', 'getsingle', [
-        'return' => ["name"],
-        'value' => $payment['payment_instrument_id'],
-        'option_group_id' => "payment_instrument",
-      ]);
-
       $QBOPayment = \QuickBooksOnline\API\Facades\Payment::create(
-        [
-          'TotalAmt' => $total,
-          'CustomerRef' => $account_invoice->CustomerRef,
-          'CurrencyRef' => $account_invoice->CurrencyRef,
-          'TxnDate' => $txnDate,
-          "DepositToAccountRef" => [
-            "value" => self::getQBOAccount(htmlspecialchars_decode($financialAccount['accounting_code'])),
+      [
+        'TotalAmt' => $total,
+        'CustomerRef' => $account_invoice->CustomerRef,
+        'CurrencyRef' => $account_invoice->CurrencyRef,
+        'TxnDate' => $txnDate,
+        "PaymentRefNum" => $payment['trxn_id'],
+        'Line' => [
+          'Amount' => $total,
+          'LinkedTxn' => [
+          [
+            'TxnType' => 'Invoice',
+            'TxnId' => $account_invoice->Id,
           ],
-          "PaymentMethodRef" => [
-            "value" => self::getQBOPaymentMethod(htmlspecialchars_decode($paymentInstrument['name'])),
           ],
-          'Line' => [
-            'Amount' => $total,
-            'LinkedTxn' => [
-              [
-                'TxnType' => 'Invoice',
-                'TxnId' => $account_invoice->Id,
-              ],
-            ],
-          ],
-        ]
+        ],
+      ]
       );
+
+      try {
+        $financialAccount = civicrm_api3('FinancialAccount', 'getsingle', [
+          'return' => ["accounting_code", "account_type_code"],
+          'id' => $payment['to_financial_account_id'],
+        ]);
+        $QBOPayment->DepositToAccountRef =  new \QuickBooksOnline\API\Data\IPPReferenceType([
+          "value" => self::getQBOAccount(htmlspecialchars_decode($financialAccount['accounting_code'])),
+        ]);
+      }
+      catch (Exception $e) {
+      }
+
+      try {
+        $paymentInstrument = civicrm_api3('OptionValue', 'getsingle', [
+          'return' => ["name"],
+          'value' => $payment['payment_instrument_id'],
+          'option_group_id' => "payment_instrument",
+        ]);
+        $QBOPayment->PaymentMethodRef = new \QuickBooksOnline\API\Data\IPPReferenceType([
+          "value" => self::getQBOPaymentMethod(htmlspecialchars_decode($paymentInstrument['name'])),
+        ]);
+
+      }
+      catch (Exception $e) {
+      }
+
       $result[] = $dataService->Add($QBOPayment);
     }
 
