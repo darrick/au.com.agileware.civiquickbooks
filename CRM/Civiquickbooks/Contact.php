@@ -38,6 +38,7 @@ class CRM_Civiquickbooks_Contact {
           'contact_id.organization_name',
           'contact_id.household_name',
           'contact_id.contact_type',
+          'contact_id.display_name',
         ],
       ])['values'];
 
@@ -45,6 +46,9 @@ class CRM_Civiquickbooks_Contact {
         switch($ac['contact_id.contact_type']) {
           case 'Individual':
             $contact = $this->getQBOContactByName($ac['contact_id.last_name'], $ac['contact_id.first_name']);
+            if (empty($contact)) {
+              $contact = $this->getQBOContactByName($ac['contact_id.display_name']);
+            }
             break;
           case 'Organization':
             $contact = $this->getQBOContactByName($ac['contact_id.organization_name']);
