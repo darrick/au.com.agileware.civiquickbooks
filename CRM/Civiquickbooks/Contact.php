@@ -481,6 +481,10 @@ class CRM_Civiquickbooks_Contact {
       $customer['Id'] = $accountsID;
     }
 
+    if ($this->getQBODisplayNameCollision($customer["DisplayName"])) {
+      $customer["DisplayName"] = $customer["DisplayName"] . " C";
+    }
+
     return \QuickBooksOnline\API\Facades\Customer::create($customer);
 
   }
@@ -518,6 +522,46 @@ class CRM_Civiquickbooks_Contact {
 
     return $customers;
   }
+  /**
+   * Determine if a Custoomer name collides with a Vendor or Employee name.
+   *
+   *
+   * @param $name      Family Name for Individuals or Company /
+   *                   Fully Qualified Name for Organisations
+   */
+  protected function getQBODisplayNameCollision($name) {
+
+
+    try {
+      $dataService = CRM_Quickbooks_APIHelper::getAccountingDataServiceObject();
+
+      $dataService->throwExceptionOnError(FALSE);
+
+      $query =  sprintf('SELECT * FROM Vendor WHERE DisplayName = \'%s\'', $name);
+      $vendors = $dataService->Query($query, 0, 1);
+      if ($last_error = $dataService->getLastError()) {
+        $error_message = CRM_Quickbooks_APIHelper::parseErrorResponse($last_error);
+
+        throw new Exception('"' . implode("\n", $error_message) . '"');
+      }
+      $vendor = is_array($vendors) ? current($vendors) : NULL;
+
+      $query =  sprintf('SELECT * FROM Employee WHERE DisplayName = \'%s\'', $name);
+      $employees = $dataService->Query($query, 0, 1);
+      if ($last_error = $dataService->getLastError()) {
+        $error_message = CRM_Quickbooks_APIHelper::parseErrorResponse($last_error);
+
+        throw new Exception('"' . implode("\n", $error_message) . '"');
+      }
+      $employee = is_array($employees) ? current($employees) : NULL;
+
+      return $employee || $vendor;
+    }
+    //process and analyse the response result from Quickbooks
+    catch (Exception $e) {
+      throw new CRM_Civiquickbooks_Contact_Exception('Error pulling single Vendor from QBO: ' . $e->getMessage(), 0);
+    }
+  }
 
   /**
    * Get a single customer from Quickbooks Online by name.
@@ -535,7 +579,7 @@ class CRM_Civiquickbooks_Contact {
   protected function getQBOContactByName($name, $givenName = NULL) {
     $query = (
       empty($givenName)
-      ? sprintf('SELECT * FROM Customer WHERE FullyQualifiedName = \'%s\'', $name)
+      ? sprintf('SELECT * FROM Customer WHERE DisplayName = \'%s\'', $name)
       : sprintf('SELECT * FROM Customer WHERE FamilyName = \'%s\' AND GivenName = \'%s\'', $name, $givenName)
     );
 
