@@ -679,6 +679,11 @@ class CRM_Civiquickbooks_Invoice {
         'group_name' => 'Contribute Preferences',
       ]);
 
+      $invoice_prefix = civicrm_api3('Setting', 'getvalue', array(
+        'name' => "quickbooks_invoice_prefix",
+        'group' => 'QuickBooks Online Settings',
+      ));
+
       if (!empty($invoice_settings['due_date']) && !empty($invoice_settings['due_date_period'])) {
         $time_adjust_str = '+' . $invoice_settings['due_date'] . ' ' . $invoice_settings['due_date_period'];
       }
@@ -729,7 +734,7 @@ class CRM_Civiquickbooks_Invoice {
       }
 
       if ($whereToGetInvoiceNumber == 'civi') {
-        $new_invoice['DocNumber'] = 'Civi-' . $db_contribution['id'];
+        $new_invoice['DocNumber'] = sprintf($invoice_prefix . '%s', $db_contribution['id'] , '');
       }
       elseif ($whereToGetInvoiceNumber == 'qb') {
         $new_invoice['AutoDocNumber'] = 1;
@@ -1087,7 +1092,7 @@ class CRM_Civiquickbooks_Invoice {
   protected function savePushResponse($result, $record, $responseErrors = NULL) {
 
     if (!$result) {
-      $responseErrors = $dataService->getLastError();
+      $responseErrors = CRM_Quickbooks_APIHelper::getAccountingDataServiceObject()->getLastError();
     }
 
     if (!empty($responseErrors)) {
