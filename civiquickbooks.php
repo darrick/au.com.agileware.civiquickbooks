@@ -24,50 +24,19 @@ function civiquickbooks_civicrm_install() {
 }
 
 /**
+ * Implementation of hook_civicrm_postInstall
+ */
+function civiquickbooks_civicrm_postInstall() {
+  _civiquickbooks_civix_civicrm_postInstall();
+}
+
+/**
  * Implements hook_civicrm_enable().
  *
  * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_enable
  */
 function civiquickbooks_civicrm_enable() {
   _civiquickbooks_civix_civicrm_enable();
-}
-
-/**
- * Implements hook_civicrm_navigationMenu().
- *
- * Adds entries to the navigation menu.
- */
-function civiquickbooks_civicrm_navigationMenu(&$menu) {
-  $item[] = [
-    'label' => E::ts('QuickBooks'),
-    'name' => 'QuickBooks',
-    'url' => NULL,
-    'permission' => 'administer CiviCRM',
-    'operator' => NULL,
-    'separator' => NULL,
-  ];
-  _civiquickbooks_civix_insert_navigation_menu($menu, 'Administer', $item[0]);
-
-  $item[] = [
-    'label' => E::ts('Quickbooks Settings'),
-    'name' => 'Quickbooks Settings',
-    'url' => 'civicrm/quickbooks/settings',
-    'permission' => 'administer CiviCRM',
-    'operator' => NULL,
-    'separator' => NULL,
-  ];
-  _civiquickbooks_civix_insert_navigation_menu($menu, 'Administer/QuickBooks', $item[1]);
-
-  $item[] = [
-    'label' => E::ts('Synchronize contacts'),
-    'name' => 'Contact Sync',
-    'url' => 'civicrm/a/#/accounts/contact/sync/quickbooks',
-    'permission' => 'administer CiviCRM',
-    'operator' => NULL,
-    'separator' => NULL,
-  ];
-  _civiquickbooks_civix_insert_navigation_menu($menu, 'Administer/QuickBooks', $item[2]);
-  _civiquickbooks_civix_navigationMenu($menu);
 }
 
 /**
@@ -269,13 +238,4 @@ function civiquickbooks_civicrm_pageRun(&$page) {
       'template' => "CRM/Civiquickbooks/ContactSyncBlock.tpl",
     ]);
   }
-}
-
-/**
- * Implements hook_civicrm_entityTypes().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
- */
-function civiquickbooks_civicrm_entityTypes(&$entityTypes) {
-  _civiquickbooks_civix_civicrm_entityTypes($entityTypes);
 }

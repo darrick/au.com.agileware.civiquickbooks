@@ -1,6 +1,7 @@
 <?php
 
 /** Load CiviX ExtensionUtil class and bundled autoload resolver. **/
+
 use Civi\Api4\AccountInvoice;
 use CRM_Civiquickbooks_ExtensionUtil as E;
 
@@ -79,7 +80,7 @@ class CRM_Civiquickbooks_Invoice {
         throw new CRM_Core_Exception('Could not get DataService Object: ' . $e->getMessage());
       }
 
-      foreach ($records['values'] as $i => $record) {
+      foreach ($records as $i => $record) {
         try {
           $accountsInvoice = $this->getAccountsInvoice($record);
 
@@ -167,7 +168,7 @@ class CRM_Civiquickbooks_Invoice {
         throw new CRM_Core_Exception('Could not get DataService Object: ' . $e->getMessage());
       }
 
-      foreach ($records['values'] as $i => $record) {
+      foreach ($records as $i => $record) {
         try {
           //double check if the record has been synced or not
           if (!isset($record['accounts_invoice_id']) || !isset($record['accounts_data'])) {
@@ -374,7 +375,7 @@ class CRM_Civiquickbooks_Invoice {
         }
 
         $record['accounts_needs_update'] = 0;
-        $record['accounts_status_id'] = 3;
+        $record['accounts_status_id'] = 'completed';
 
         CRM_Core_DAO::setFieldValue(
           'CRM_Accountsync_DAO_AccountInvoice',
@@ -581,7 +582,7 @@ class CRM_Civiquickbooks_Invoice {
             // We will use account type code to get state tax code id for US companies
             $tax_types[$line_item['financial_type_id']] = [
               'sale_tax_acctgCode' => $tmp,
-              'sale_tax_account_type_code' => htmlspecialchars_decode($entityFinancialAccount['financial_account_id.account_type_code']),
+              'sale_tax_account_type_code' => htmlspecialchars_decode($entityFinancialAccount['financial_account_id.account_type_code'] ?? NULL),
             ];
 
             $tax_codes[] = $tmp;
@@ -1022,16 +1023,12 @@ class CRM_Civiquickbooks_Invoice {
    * @throws \CiviCRM_API3_Exception
    */
   protected function findPushContributions($params, $limit) {
-    $criteria = [
-      'accounts_needs_update' => 1,
-      'plugin' => $this->plugin,
-      'connector_id' => 0,
-      'accounts_status_id' => ['!=' => "cancelled"],
-      'options' => [
-        'sort' => 'error_data ASC',
-        'limit' => $limit,
-      ],
-    ];
+    $accountInvoices = AccountInvoice::get()
+      ->addWhere('plugin', '=', $this->plugin)
+      ->addWhere('connector_id', '=', 0)
+      ->addWhere('accounts_status_id:name', 'NOT IN', ['completed'])
+      ->addOrderBy('error_data', 'ASC')
+      ->setLimit($limit);
     if (isset($params['contribution_id'])) {
       $criteria['contribution_id'] = $params['contribution_id'];
       unset($criteria['accounts_needs_update']);
@@ -1063,27 +1060,6 @@ class CRM_Civiquickbooks_Invoice {
       $accountInvoices->addWhere('contribution_id', '=', $params['contribution_id']);
     }
 
-    return $accountInvoices->execute()->getArrayCopy();
-  }
-/*
-  protected function findPullContributions($params, $limit) {
-    $criteria = [
-      'plugin' => $this->plugin,
-      'connector_id' => 0,
-      'accounts_status_id' => ['NOT IN', [1,3]],
-      'accounts_invoice_id' => ['IS NOT NULL' => 1],
-      'accounts_data' => ['IS NOT NULL' => 1],
-      'error_data' => ['IS NULL' => 1],
-      'options' => [
-        'sort' => 'error_data',
-        'limit' => $limit,
-      ],
-    ];
-    if (isset($params['contribution_id'])) {
-      $criteria['contribution_id'] = $params['contribution_id'];
-      unset($criteria['accounts_needs_update']);
-    }
-
     $records = civicrm_api3('AccountInvoice', 'get', $criteria);
 
     if (!isset($params['contribution_id'])) {
@@ -1095,7 +1071,7 @@ class CRM_Civiquickbooks_Invoice {
 
     return $records;
   }
-*/
+
   /**
    * Save outcome from the push attempt to the civicrm_accounts_invoice table.
    *
