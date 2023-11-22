@@ -1,6 +1,7 @@
 <?php
 
 /** Load CiviX ExtensionUtil class and bundled autoload resolver. **/
+use Civi\Api4\AccountInvoice;
 use CRM_Civiquickbooks_ExtensionUtil as E;
 
 require E::path('vendor/autoload.php');
@@ -1025,7 +1026,7 @@ class CRM_Civiquickbooks_Invoice {
       'accounts_needs_update' => 1,
       'plugin' => $this->plugin,
       'connector_id' => 0,
-      'accounts_status_id' => ['NOT IN', 3],
+      'accounts_status_id' => ['!=' => "cancelled"],
       'options' => [
         'sort' => 'error_data ASC',
         'limit' => $limit,
@@ -1049,10 +1050,27 @@ class CRM_Civiquickbooks_Invoice {
   }
 
   protected function findPullContributions($params, $limit) {
+    $accountInvoices = AccountInvoice::get()
+      ->addWhere('plugin', '=', $this->plugin)
+      ->addWhere('connector_id', '=', 0)
+      ->addWhere('accounts_status_id:name', 'NOT IN', ['completed', 'cancelled'])
+      ->addWhere('accounts_invoice_id', 'IS NOT NULL')
+      ->addWhere('accounts_data', 'IS NOT NULL')
+      ->addWhere('error_data', 'IS NULL')
+      ->setLimit($limit);
+
+    if (isset($params['contribution_id'])) {
+      $accountInvoices->addWhere('contribution_id', '=', $params['contribution_id']);
+    }
+
+    return $accountInvoices->execute()->getArrayCopy();
+  }
+/*
+  protected function findPullContributions($params, $limit) {
     $criteria = [
       'plugin' => $this->plugin,
       'connector_id' => 0,
-      'accounts_status_id' => ['NOT IN', [1, 3]],
+      'accounts_status_id' => ['NOT IN', [1,3]],
       'accounts_invoice_id' => ['IS NOT NULL' => 1],
       'accounts_data' => ['IS NOT NULL' => 1],
       'error_data' => ['IS NULL' => 1],
@@ -1077,7 +1095,7 @@ class CRM_Civiquickbooks_Invoice {
 
     return $records;
   }
-
+*/
   /**
    * Save outcome from the push attempt to the civicrm_accounts_invoice table.
    *
