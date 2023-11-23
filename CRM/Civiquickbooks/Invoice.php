@@ -1030,20 +1030,12 @@ class CRM_Civiquickbooks_Invoice {
       ->addOrderBy('error_data', 'ASC')
       ->setLimit($limit);
     if (isset($params['contribution_id'])) {
-      $criteria['contribution_id'] = $params['contribution_id'];
-      unset($criteria['accounts_needs_update']);
+      $accountInvoices->addWhere('contribution_id', '=', $params['contribution_id']);
+    } else {
+      $accountInvoices->addWhere('accounts_needs_update', '=', TRUE);
     }
 
-    $records = civicrm_api3('AccountInvoice', 'get', $criteria);
-
-    if (!isset($params['contribution_id'])) {
-      $criteria['accounts_status_id'] = ['IS NULL' => 1];
-
-      $nullrec = civicrm_api3('AccountInvoice', 'get', $criteria);
-      $records['values'] = array_merge($records['values'], $nullrec['values']);
-    }
-
-    return $records;
+    return $accountInvoices->execute()->getArrayCopy();
   }
 
   protected function findPullContributions($params, $limit) {
@@ -1060,16 +1052,7 @@ class CRM_Civiquickbooks_Invoice {
       $accountInvoices->addWhere('contribution_id', '=', $params['contribution_id']);
     }
 
-    $records = civicrm_api3('AccountInvoice', 'get', $criteria);
-
-    if (!isset($params['contribution_id'])) {
-      $criteria['accounts_status_id'] = ['IS NULL' => 1];
-
-      $nullrec = civicrm_api3('AccountInvoice', 'get', $criteria);
-      $records['values'] = array_merge($records['values'], $nullrec['values']);
-    }
-
-    return $records;
+    return $accountInvoices->execute()->getArrayCopy();
   }
 
   /**
