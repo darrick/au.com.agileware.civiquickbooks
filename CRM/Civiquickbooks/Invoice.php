@@ -1031,10 +1031,10 @@ class CRM_Civiquickbooks_Invoice {
       ->setLimit($limit);
     if (isset($params['contribution_id'])) {
       $accountInvoices->addWhere('contribution_id', '=', $params['contribution_id']);
-    } else {
+    }
+    else {
       $accountInvoices->addWhere('accounts_needs_update', '=', TRUE);
     }
-
     return $accountInvoices->execute()->getArrayCopy();
   }
 
