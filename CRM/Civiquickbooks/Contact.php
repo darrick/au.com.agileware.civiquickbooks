@@ -181,7 +181,6 @@ class CRM_Civiquickbooks_Contact {
         ->addWhere('plugin', '=', $this->plugin)
         ->addWhere('connector_id', '=', $params['connector_id'])
         ->addWhere('do_not_sync', '=', FALSE)
-        ->addWhere('error_data', 'IS NULL')
         // Sort contact records without error data first. This should ensure valid
         // records to be processed before API limits are hit trying to process
         // records that have previously failed.
@@ -521,9 +520,16 @@ class CRM_Civiquickbooks_Contact {
 
       $customer['Id'] = $accountsID;
     }
+    else {
+      if ($this->getQBODisplayNameCollision($customer["DisplayName"])) {
+        $customer["DisplayName"] = $customer["DisplayName"] . " C";
+      }
 
-    if ($this->getQBODisplayNameCollision($customer["DisplayName"])) {
-      $customer["DisplayName"] = $customer["DisplayName"] . " C";
+      $existingContact = $this->getQBOContactByName($customer["DisplayName"]);
+
+      if (!empty($existingContact)) {
+        return \QuickBooksOnline\API\Facades\Customer::update($existingContact, $customer);
+      }
     }
 
     return \QuickBooksOnline\API\Facades\Customer::create($customer);
