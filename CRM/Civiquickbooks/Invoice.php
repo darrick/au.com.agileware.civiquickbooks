@@ -235,7 +235,7 @@ class CRM_Civiquickbooks_Invoice {
         'CustomerRef' => $account_invoice->CustomerRef,
         'CurrencyRef' => $account_invoice->CurrencyRef,
         'TxnDate' => $txnDate,
-        "PaymentRefNum" => $payment['trxn_id'],
+        "PaymentRefNum" => isset($payment['trxn_id']) ? $payment['trxn_id'] : $payment['check_number'],
         'Line' => [
           'Amount' => $total,
           'LinkedTxn' => [
