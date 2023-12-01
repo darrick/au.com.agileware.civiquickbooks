@@ -228,24 +228,23 @@ class CRM_Civiquickbooks_Invoice {
     foreach ($payments['values'] as $payment) {
       $txnDate = $payment['trxn_date'];
       $total = sprintf('%.5f', $payment['total_amount']);
-
       $QBOPayment = \QuickBooksOnline\API\Facades\Payment::create(
-      [
-        'TotalAmt' => $total,
-        'CustomerRef' => $account_invoice->CustomerRef,
-        'CurrencyRef' => $account_invoice->CurrencyRef,
-        'TxnDate' => $txnDate,
-        "PaymentRefNum" => isset($payment['trxn_id']) ? $payment['trxn_id'] : $payment['check_number'],
-        'Line' => [
-          'Amount' => $total,
-          'LinkedTxn' => [
-          [
-            'TxnType' => 'Invoice',
-            'TxnId' => $account_invoice->Id,
+        [
+          'TotalAmt' => $total,
+          'CustomerRef' => $account_invoice->CustomerRef,
+          'CurrencyRef' => $account_invoice->CurrencyRef,
+          'TxnDate' => $txnDate,
+          "PaymentRefNum" => isset($payment['trxn_id']) ? $payment['trxn_id'] : $payment['check_number'],
+          'Line' => [
+            'Amount' => $total,
+            'LinkedTxn' => [
+              [
+                'TxnType' => 'Invoice',
+                'TxnId' => $account_invoice->Id,
+              ],
+            ],
           ],
-          ],
-        ],
-      ]
+        ]
       );
 
       try {
@@ -811,9 +810,9 @@ class CRM_Civiquickbooks_Invoice {
   }
 
   /**
-   * Get account id from QBO by Name or FullyQualifiedName
+   * Get payment_method id from QBO by Name or FullyQualifiedName
    *
-   * @param $name - Name or FullyQualifiedName of Account.
+   * @param $name - Name or FullyQualifiedName of PaymentMethod.
    *                Assumes FullyQualifiedName if containing a colon (:)
    *
    * @return int|FALSE

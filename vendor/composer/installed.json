@@ -119,6 +119,6 @@
             "install-path": "../quickbooks/v3-php-sdk"
         }
     ],
-    "dev": false,
+    "dev": true,
     "dev-package-names": []
 }
