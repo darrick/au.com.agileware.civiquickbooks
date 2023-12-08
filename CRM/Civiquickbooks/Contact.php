@@ -512,6 +512,10 @@ class CRM_Civiquickbooks_Contact {
       $customer["CompanyName"] = $contact['current_employer'];
     }
 
+    if ($this->getQBODisplayNameCollision($customer["DisplayName"])) {
+	    $customer["DisplayName"] = $customer["DisplayName"] . " C";
+    }
+
     if (isset($accountsID)) {
       if (isset($customer_data)) {
         //NOTE here the customer_data is deserialized as an array.
@@ -521,9 +525,6 @@ class CRM_Civiquickbooks_Contact {
       $customer['Id'] = $accountsID;
     }
     else {
-      if ($this->getQBODisplayNameCollision($customer["DisplayName"])) {
-        $customer["DisplayName"] = $customer["DisplayName"] . " C";
-      }
 
       $existingContact = $this->getQBOContactByName($customer["DisplayName"]);
 
