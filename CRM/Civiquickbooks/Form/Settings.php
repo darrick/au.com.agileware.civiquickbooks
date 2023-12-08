@@ -23,13 +23,13 @@ class CRM_Civiquickbooks_Form_Settings extends CRM_Core_Form {
     $QBCredentials = CRM_Quickbooks_APIHelper::getQuickBooksCredentials();
 
     foreach ($settings as $name => $setting) {
-      if (isset($setting['quick_form_type'])) {
-        $add = 'add' . $setting['quick_form_type'];
+      if (CRM_Utils_Array::value('quick_form_type', $setting) || !empty($setting['html_type'])) {
+        $add = 'add' . CRM_Utils_Array::value('quick_form_type', $setting);
 
         if ($add == 'addElement') {
-		  $this->$add($setting['html_type'], $name, $setting['title'], $setting['html_attributes'] ?? NULL);
+          $this->$add($setting['html_type'], $name, $setting['title'], CRM_Utils_Array::value('html_attributes', $setting));
         }
-        elseif ($setting['html_type'] == 'Select') {
+        elseif ($setting['html_type'] == 'select') {
           $optionValues = [];
           if (!empty($setting['pseudoconstant']) && !empty($setting['pseudoconstant']['optionGroupName'])) {
             $optionValues = CRM_Core_OptionGroup::values($setting['pseudoconstant']['optionGroupName'], FALSE, FALSE, FALSE, NULL, 'name');
@@ -39,7 +39,10 @@ class CRM_Civiquickbooks_Form_Settings extends CRM_Core_Form {
               ->get($setting['pseudoconstant']['callback']);
             $optionValues = call_user_func_array($callBack, $optionValues);
           }
-          $this->add('select', $setting['name'], $setting['title'], $optionValues, FALSE, $setting['html_attributes']);
+          $this->add('select', $setting['name'], $setting['title'], $optionValues, FALSE, CRM_Utils_Array::value('html_attributes', $setting));
+        }
+        elseif ($setting['html_type'] == 'datepicker') {
+          $this->add('datepicker', $name, $setting['title'], CRM_Utils_Array::value('html_attributes', $setting));
         }
         else {
           $this->$add($name, $setting['title']);

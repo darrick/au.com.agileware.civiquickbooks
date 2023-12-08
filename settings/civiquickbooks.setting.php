@@ -185,7 +185,7 @@ return [
     'is_contact' => 0,
     'description' => E::ts('realmId retrieved when got access token'),
     'help_text' => E::ts('realmId retrieved when got access token'),
-    'html_type' => 'Text',
+    'html_type' => NULL,
     'html_attributes' => [
       'size' => 50,
       'readonly' => 'true',
@@ -203,7 +203,7 @@ return [
     'is_contact' => 0,
     'description' => E::ts('QuickBooks company country code for differentiating US and other countries during including tax in invoices.'),
     'help_text' => E::ts('QuickBooks company country code for differentiating US and other countries during including tax in invoices.'),
-    'html_type' => 'Text',
+    'html_type' => NULL,
     'html_attributes' => [
       'size' => 50,
       'readonly' => 'true',
